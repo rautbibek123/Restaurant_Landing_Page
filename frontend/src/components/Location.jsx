@@ -37,23 +37,14 @@ export default function Location() {
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
           >
-            <div className="location__map-inner">
-              <div className="location__map-pin">📍</div>
-              <h3>Thamel, Kathmandu</h3>
-              <p>Jyatha Marg, Thamel<br />Kathmandu 44600, Nepal</p>
-              <a
-                href="https://maps.google.com/?q=Thamel+Kathmandu+Nepal"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-outline location__map-btn"
-              >
-                <MapPin size={16} /> Open in Google Maps
-              </a>
-            </div>
-            {/* Decorative map grid */}
-            <div className="location__map-grid" aria-hidden="true">
-              {[...Array(64)].map((_, i) => <div key={i} className="location__map-cell" />)}
-            </div>
+            <iframe 
+              src="https://maps.google.com/maps?q=Thamel,Kathmandu,Nepal&t=&z=15&ie=UTF8&iwloc=&output=embed" 
+              allowFullScreen="" 
+              loading="lazy" 
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Annapurna Kitchen Location"
+              style={{ filter: 'invert(90%) hue-rotate(180deg) brightness(0.9) contrast(0.9)' }}
+            ></iframe>
           </motion.div>
 
           {/* Info cards */}

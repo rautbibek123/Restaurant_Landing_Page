@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
+import { Clock, CheckCircle2, Play, CheckCircle, Table, User, Banknote } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function OrderManagement() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('active'); // active, completed
   const { user } = useAuth();
   const toast = useToast();
 
@@ -27,15 +30,21 @@ export default function OrderManagement() {
 
   useEffect(() => {
     fetchOrders();
-    // In a real app, we'd poll this or use WebSockets
-    const interval = setInterval(fetchOrders, 30000);
+    const interval = setInterval(fetchOrders, 10000); // Faster polling for KDS
     return () => clearInterval(interval);
   }, []);
+
+  const filteredOrders = useMemo(() => {
+    if (activeTab === 'completed') {
+      return orders.filter(o => o.status === 'completed' || o.status === 'served');
+    }
+    return orders.filter(o => o.status !== 'completed' && o.status !== 'served' && o.status !== 'cancelled');
+  }, [orders, activeTab]);
 
   const updateStatus = async (id, status) => {
     try {
       const token = localStorage.getItem('portal_token');
-      await fetch(`/api/orders/${id}/status`, {
+      const res = await fetch(`/api/orders/${id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -43,72 +52,134 @@ export default function OrderManagement() {
         },
         body: JSON.stringify({ status })
       });
-      fetchOrders();
+      const data = await res.json();
+      if (data.success) {
+        toast(`Order updated to ${status}`, 'success');
+        fetchOrders();
+      }
     } catch (err) {
       toast('Failed to update status', 'error');
     }
   };
 
-  const markPaid = async (id) => {
-    try {
-      const token = localStorage.getItem('portal_token');
-      await fetch(`/api/orders/${id}/pay`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      fetchOrders();
-      toast('Order marked as paid!', 'success');
-    } catch (err) {
-      toast('Failed to process payment', 'error');
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return '#f39c12';
+      case 'preparing': return '#3498db';
+      case 'ready': return '#2ecc71';
+      case 'served': return '#9b59b6';
+      default: return 'var(--color-muted)';
     }
   };
 
-  if (loading) return <div>Loading orders...</div>;
+  const getTimeElapsed = (createdAt) => {
+    const elapsed = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+    return elapsed;
+  };
+
+  if (loading) return <div className="pos-loading">Syncing with Kitchen...</div>;
 
   return (
-    <div>
-      <h1 style={{marginBottom: '20px', fontFamily: 'var(--font-serif)', color: 'var(--color-gold)'}}>Active Orders</h1>
-      
-      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px'}}>
-        {orders.map(order => (
-          <div key={order._id} className="glass-card" style={{padding: '20px', borderTop: `4px solid ${order.status === 'completed' ? '#2ECC71' : 'var(--color-gold)'}`}}>
-            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
-              <strong>{order.orderNumber}</strong>
-              <span className={`badge badge-${order.status === 'completed' ? 'green' : 'orange'}`}>{order.status}</span>
-            </div>
-            
-            <div style={{marginBottom: '15px'}}>
-              {order.items.map(item => (
-                <div key={item._id} style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--color-text-secondary)', margin: '4px 0'}}>
-                  <span>{item.quantity}x {item.name}</span>
-                  <span>Rs. {item.price * item.quantity}</span>
-                </div>
-              ))}
-            </div>
-            
-            <div style={{display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--color-border)', paddingTop: '10px', marginBottom: '15px'}}>
-              <span>Total</span>
-              <strong>Rs. {order.totalAmount}</strong>
-            </div>
-
-            <div style={{display: 'flex', gap: '10px', flexDirection: 'column'}}>
-              {order.status === 'pending' && (
-                <button className="btn btn-primary" onClick={() => updateStatus(order._id, 'preparing')}>Acknowledge (Start Prep)</button>
-              )}
-              {order.status === 'preparing' && (
-                <button className="btn btn-primary" onClick={() => updateStatus(order._id, 'completed')}>Mark Ready to Serve</button>
-              )}
-              {order.paymentStatus === 'unpaid' && (
-                <button className="btn btn-outline" style={{borderColor: '#2ECC71', color: '#2ECC71'}} onClick={() => markPaid(order._id)}>Process Payment</button>
-              )}
-            </div>
-            
-            <div style={{marginTop: '15px', fontSize: '0.75rem', color: 'var(--color-muted)', textAlign: 'center'}}>
-              Taken by: {order.staffId?.name || 'Unknown'} • Payment: <strong style={{color: order.paymentStatus === 'paid' ? '#2ECC71' : '#E74C3C'}}>{order.paymentStatus.toUpperCase()}</strong>
-            </div>
+    <div className="kds-container">
+      <header className="kds-header">
+        <div className="kds-title-area">
+          <h2 className="mgmt-title">Kitchen Display System</h2>
+          <div className="kds-tabs">
+            <button className={activeTab === 'active' ? 'active' : ''} onClick={() => setActiveTab('active')}>Active Tickets</button>
+            <button className={activeTab === 'completed' ? 'active' : ''} onClick={() => setActiveTab('completed')}>History</button>
           </div>
-        ))}
-        {orders.length === 0 && <p>No active orders.</p>}
+        </div>
+        <div className="kds-stats-strip">
+          <div className="stat"><span>PENDING</span> <strong>{orders.filter(o => o.status === 'pending').length}</strong></div>
+          <div className="stat"><span>COOKING</span> <strong>{orders.filter(o => o.status === 'preparing').length}</strong></div>
+          <div className="stat"><span>READY</span> <strong>{orders.filter(o => o.status === 'ready').length}</strong></div>
+        </div>
+      </header>
+
+      <div className="kds-board">
+        <AnimatePresence>
+          {filteredOrders.length === 0 ? (
+            <div className="kds-empty-state">
+              <div className="empty-icon">🍳</div>
+              <h3>Kitchen is Clear</h3>
+              <p>New orders will appear here automatically</p>
+            </div>
+          ) : (
+            filteredOrders.map(order => {
+              const elapsed = getTimeElapsed(order.createdAt);
+              const isUrgent = elapsed > 15;
+
+              return (
+                <motion.div 
+                  key={order._id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className={`kds-ticket ${isUrgent ? 'urgent' : ''}`}
+                >
+                  <div className="ticket-top" style={{ borderColor: getStatusColor(order.status) }}>
+                    <div className="order-meta">
+                      <span className="order-num">#{order.orderNumber.split('-').pop()}</span>
+                      <span className="order-type">{order.orderType?.toUpperCase()}</span>
+                    </div>
+                    <div className="order-time">
+                      <Clock size={14} /> {elapsed}m
+                    </div>
+                  </div>
+
+                  <div className="ticket-sub-header">
+                    <div className="info-badge">
+                      <Table size={12} /> {order.tableNumber || 'WALK-IN'}
+                    </div>
+                    <div className="info-badge">
+                      <User size={12} /> {order.staffId?.name?.split(' ')[0] || 'Admin'}
+                    </div>
+                  </div>
+
+                  <div className="ticket-items-list">
+                    {order.items.map((item, idx) => (
+                      <div key={idx} className="ticket-item">
+                        <div className="item-row">
+                          <span className="qty">{item.quantity}x</span>
+                          <span className="name">{item.name}</span>
+                        </div>
+                        {item.modifiers?.length > 0 && (
+                          <div className="modifiers">
+                            {item.modifiers.map((m, i) => <span key={i}>• {m}</span>)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="ticket-actions">
+                    {order.status === 'pending' && (
+                      <button className="kds-btn start" onClick={() => updateStatus(order._id, 'preparing')}>
+                        <Play size={16} /> START COOKING
+                      </button>
+                    )}
+                    {order.status === 'preparing' && (
+                      <button className="kds-btn ready" onClick={() => updateStatus(order._id, 'ready')}>
+                        <CheckCircle2 size={16} /> MARK READY
+                      </button>
+                    )}
+                    {order.status === 'ready' && (
+                      <button className="kds-btn serve" onClick={() => updateStatus(order._id, 'served')}>
+                        <Banknote size={16} /> MARK SERVED
+                      </button>
+                    )}
+                    {order.status === 'served' && (
+                      <div className="completed-label">
+                        <CheckCircle size={16} /> SERVED
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

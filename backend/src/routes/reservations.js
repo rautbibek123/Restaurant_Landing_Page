@@ -1,7 +1,8 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { createReservation, getReservations } = require('../controllers/reservationController');
+const { createReservation, getReservations, getMyReservations, updateReservationStatus, updateReservation } = require('../controllers/reservationController');
 const validate = require('../middleware/validate');
+const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -15,6 +16,10 @@ const reservationValidation = [
 
 router.route('/')
   .post(validate(reservationValidation), createReservation)
-  .get(getReservations);
+  .get(protect, authorize('admin', 'manager', 'staff'), getReservations);
+
+router.get('/me', protect, getMyReservations);
+router.put('/:id', protect, updateReservation);
+router.put('/:id/status', protect, authorize('admin', 'manager', 'staff'), updateReservationStatus);
 
 module.exports = router;

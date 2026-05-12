@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Phone } from 'lucide-react';
+import { Menu, X, Phone, LogIn, User, LogOut } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import AuthModal from './AuthModal';
 
 const navLinks = [
   { label: 'Home',         href: '#hero' },
@@ -18,7 +21,9 @@ export default function Navbar() {
   const [scrolled, setScrolled]       = useState(false);
   const [mobileOpen, setMobileOpen]   = useState(false);
   const [active, setActive]           = useState('hero');
-  const userScrolled                  = useRef(false); // suppress scroll-spy right after a click
+  const [authOpen, setAuthOpen]       = useState(false);
+  const userScrolled                  = useRef(false);
+  const { user, logout }              = useAuth();
 
   /* ── Scroll-spy via IntersectionObserver ─────────────── */
   useEffect(() => {
@@ -107,9 +112,35 @@ export default function Navbar() {
               <Phone size={16} />
               <span>+977-1-456-7890</span>
             </a>
-            <button className="btn btn-primary navbar__cta" onClick={() => handleNav('#reservation')}>
+            {user ? (
+              <div className="navbar__user-container">
+                <Link to="/my-account" className="navbar__user-link-premium">
+                  <div className="navbar__avatar-wrapper">
+                    {user.name?.charAt(0)}
+                    <div className="navbar__avatar-glow"></div>
+                  </div>
+                  <div className="navbar__user-info-desktop">
+                    <span className="navbar__user-name-premium">{user.name?.split(' ')[0]}</span>
+                    <span className="navbar__user-status">Gold Member</span>
+                  </div>
+                </Link>
+                <button onClick={logout} className="navbar__logout-btn-premium" title="Sign Out">
+                  <LogOut size={16} />
+                </button>
+              </div>
+            ) : (
+              <button className="navbar__signin-btn-premium" onClick={() => setAuthOpen(true)}>
+                <LogIn size={16} /> <span>Sign In</span>
+              </button>
+            )}
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="btn btn-primary navbar__cta-premium" 
+              onClick={() => handleNav('#reservation')}
+            >
               Book a Table
-            </button>
+            </motion.button>
           </div>
 
           {/* Hamburger */}
@@ -162,6 +193,8 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
     </>
   );
 }

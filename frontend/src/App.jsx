@@ -18,14 +18,22 @@ import Reservation from './components/Reservation';
 import Location from './components/Location';
 import Footer from './components/Footer';
 import WhatsAppFAB from './components/WhatsAppFAB';
+import CustomerDashboard from './components/CustomerDashboard';
+import TablesSection from './components/TablesSection';
 
 // Portal Components
 import Login from './portal/Login';
 import PortalLayout from './portal/PortalLayout';
 import ProtectedRoute from './portal/ProtectedRoute';
 import POS from './portal/views/POS';
+import Dashboard from './portal/views/Dashboard';
 import OrderManagement from './portal/views/OrderManagement';
 import StaffManagement from './portal/views/StaffManagement';
+import TableManagement from './portal/views/TableManagement';
+import Payments from './portal/views/Payments';
+import ActivityLog from './portal/views/ActivityLog';
+import Settings from './portal/views/Settings';
+import MenuManagement from './portal/views/MenuManagement';
 
 function LandingPage() {
   return (
@@ -36,6 +44,7 @@ function LandingPage() {
         <TrustStrip />
         <About />
         <Menu />
+        <TablesSection />
         <Specials />
         <Gallery />
         <Testimonials />
@@ -54,33 +63,40 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public Route */}
+            {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
+
+            {/* Customer Account Dashboard */}
+            <Route path="/my-account" element={<CustomerDashboard />} />
 
             {/* Portal Login */}
             <Route path="/portal/login" element={<Login />} />
 
-            {/* Protected Portal Routes */}
-            <Route 
-              path="/portal" 
+            {/* Protected Portal Routes (Staff only) */}
+            <Route
+              path="/portal"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
                   <PortalLayout />
                 </ProtectedRoute>
               }
             >
-              <Route index element={<div style={{padding: '20px'}}><h2>Welcome to the Portal</h2><p>Select an option from the sidebar to begin.</p></div>} />
+              <Route index element={<Dashboard />} />
               <Route path="pos" element={<POS />} />
               <Route path="orders" element={<OrderManagement />} />
-              <Route 
-                path="staff" 
+              <Route path="reservations" element={<TableManagement />} />
+              <Route path="menu" element={<MenuManagement />} />
+              <Route path="payments" element={<Payments />} />
+              <Route path="activity" element={<ActivityLog />} />
+              <Route
+                path="staff"
                 element={
                   <ProtectedRoute allowedRoles={['admin', 'manager']}>
                     <StaffManagement />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route path="settings" element={<div><h2>System Settings</h2><p>Admin only</p></div>} />
+              <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>
         </BrowserRouter>
@@ -88,3 +104,4 @@ export default function App() {
     </ToastProvider>
   );
 }
+

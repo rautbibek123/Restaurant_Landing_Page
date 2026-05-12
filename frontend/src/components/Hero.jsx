@@ -31,13 +31,23 @@ export default function Hero() {
 
       <div className="container hero__content">
         {/* Script tag line */}
+        <motion.div
+          className="hero__badge"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
+          <span className="hero__badge-dot"></span>
+          <span>Himalayan Culinary Excellence</span>
+        </motion.div>
+
         <motion.span
           className="hero__tagline"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
         >
-          🍃 Authentic Flavors of the Himalayas
+          🍃 Authentic Flavors from the Roof of the World
         </motion.span>
 
         {/* Main heading */}
@@ -49,7 +59,7 @@ export default function Hero() {
         >
           <span className="hero__title-main">Annapurna</span>
           <br />
-          <span className="gradient-text">Kitchen</span>
+          <span className="gradient-text hero__title-glow">Kitchen</span>
         </motion.h1>
 
         {/* Nepali text */}
@@ -79,14 +89,24 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.9 }}
         >
-          <button className="btn btn-primary hero__btn" onClick={() => handleScroll('#reservation')}>
+          <motion.button 
+            whileHover={{ scale: 1.05, boxShadow: '0 0 25px rgba(241, 196, 15, 0.4)' }}
+            whileTap={{ scale: 0.95 }}
+            className="btn btn-primary hero__btn" 
+            onClick={() => handleScroll('#reservation')}
+          >
             <Calendar size={18} />
             Book a Table
-          </button>
-          <button className="btn btn-outline hero__btn" onClick={() => handleScroll('#menu')}>
+          </motion.button>
+          <motion.button 
+            whileHover={{ scale: 1.05, background: 'rgba(255,255,255,0.1)' }}
+            whileTap={{ scale: 0.95 }}
+            className="btn btn-outline hero__btn" 
+            onClick={() => handleScroll('#menu')}
+          >
             <UtensilsCrossed size={18} />
             Explore Menu
-          </button>
+          </motion.button>
         </motion.div>
 
         {/* Scroll indicator */}

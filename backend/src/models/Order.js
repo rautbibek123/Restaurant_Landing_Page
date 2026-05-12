@@ -4,6 +4,7 @@ const orderItemSchema = new mongoose.Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true },
   quantity: { type: Number, required: true, min: 1 },
+  modifiers: [{ type: String }],
 });
 
 const orderSchema = new mongoose.Schema({
@@ -19,13 +20,26 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'preparing', 'completed'],
+    enum: ['pending', 'preparing', 'ready', 'served', 'completed', 'cancelled'],
     default: 'pending',
+  },
+  orderType: {
+    type: String,
+    enum: ['dine-in', 'takeaway'],
+    default: 'dine-in',
+  },
+  tableNumber: {
+    type: String,
   },
   paymentStatus: {
     type: String,
     enum: ['unpaid', 'paid'],
     default: 'unpaid',
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['cash', 'card', 'online', 'none'],
+    default: 'none',
   },
   staffId: {
     type: mongoose.Schema.ObjectId,
@@ -35,13 +49,13 @@ const orderSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-generate a readable order number before saving
-orderSchema.pre('validate', async function(next) {
+orderSchema.pre('validate', async function() {
   if (this.isNew && !this.orderNumber) {
     const count = await this.constructor.countDocuments();
     const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
-    this.orderNumber = `AK-${dateStr}-${(count + 1).toString().padStart(4, '0')}`;
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    this.orderNumber = `AK-${dateStr}-${(count + 1).toString().padStart(4, '0')}-${random}`;
   }
-  next();
 });
 
 module.exports = mongoose.model('Order', orderSchema);

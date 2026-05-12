@@ -13,6 +13,8 @@ const auth = require('./routes/auth');
 const users = require('./routes/users');
 const orders = require('./routes/orders');
 const menu = require('./routes/menu');
+const tables = require('./routes/tables');
+const activityLogs = require('./routes/activityLogs');
 
 // Connect to database
 connectDB();
@@ -40,6 +42,8 @@ app.use('/api/auth', auth);
 app.use('/api/users', users);
 app.use('/api/orders', orders);
 app.use('/api/menu', menu);
+app.use('/api/tables', tables);
+app.use('/api/activity-logs', activityLogs);
 
 // Base route for health check
 app.get('/', (req, res) => {

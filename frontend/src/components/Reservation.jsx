@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, Users, Send, CheckCircle2 } from 'lucide-react';
+import { Calendar, Clock, Users, Send, CheckCircle2, User, Mail, Phone, MessageSquare } from 'lucide-react';
 import { useToast } from './Toast';
+import { useAuth } from '../context/AuthContext';
+import AuthModal from './AuthModal';
 
 const TIMES = ['12:00 PM','12:30 PM','1:00 PM','1:30 PM','2:00 PM','6:00 PM','6:30 PM','7:00 PM','7:30 PM','8:00 PM','8:30 PM','9:00 PM'];
 const GUESTS = ['1 Guest','2 Guests','3 Guests','4 Guests','5 Guests','6+ Guests'];
@@ -13,7 +15,16 @@ export default function Reservation() {
   const [errors, setErrors]       = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading]     = useState(false);
+  const [authOpen, setAuthOpen]   = useState(false);
   const toast                     = useToast();
+  const { user }                  = useAuth();
+
+  // Auto-fill name and email if user is logged in
+  useEffect(() => {
+    if (user) {
+      setForm(f => ({ ...f, name: user.name || f.name, email: user.email || f.email }));
+    }
+  }, [user]);
 
   const validate = () => {
     const e = {};
@@ -33,15 +44,24 @@ export default function Reservation() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!user) {
+      toast('Please sign in to make a reservation', 'info');
+      setAuthOpen(true);
+      return;
+    }
+
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
     setLoading(true);
     try {
+      // Attach logged-in customer's ID so reservation shows in their dashboard
+      const payload = user ? { ...form, user: user.id || user._id } : form;
       const res = await fetch('/api/reservations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -132,13 +152,23 @@ export default function Reservation() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', damping: 15 }}
               >
-                <CheckCircle2 size={64} color="var(--color-gold)" strokeWidth={1.5} />
-                <h3>Reservation Confirmed!</h3>
-                <p>Thank you, <strong>{form.name}</strong>! We've received your booking for <strong>{form.date}</strong> at <strong>{form.time}</strong> for <strong>{form.guests}</strong>.</p>
-                <p>We'll send a confirmation to <strong>{form.email}</strong>. See you soon! 🏔️</p>
-                <button className="btn btn-primary" onClick={() => { setSubmitted(false); setForm(initialForm); }}>
-                  Make Another Booking
-                </button>
+                <div style={{ fontSize: '3.5rem', marginBottom: '16px' }}>✨</div>
+                <h3>Reservation Requested!</h3>
+                <p>Namaste, <strong>{form.name}</strong>. We've received your booking for <strong>{form.guests}</strong> on <strong>{form.date}</strong> at <strong>{form.time}</strong>.</p>
+                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem', marginTop: '8px' }}>
+                  A confirmation email will be sent to <strong>{form.email}</strong>. See you soon! 🏔️
+                </p>
+                
+                <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+                  {user && (
+                    <a href="/my-account" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                      📋 Track Booking Status
+                    </a>
+                  )}
+                  <button className="btn btn-outline" style={{ width: '100%', justifyContent: 'center' }} onClick={() => { setSubmitted(false); setForm(initialForm); }}>
+                    Make Another Booking
+                  </button>
+                </div>
               </motion.div>
             ) : (
               <motion.form
@@ -153,14 +183,12 @@ export default function Reservation() {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="res-name">Full Name *</label>
-                    <input id="res-name" name="name" placeholder="Ramesh Shrestha" value={form.name} onChange={handleChange} className={errors.name ? 'error' : ''} />
-                    {errors.name && <span className="form-error">{errors.name}</span>}
+                    <label htmlFor="res-name"><User size={14} /> Full Name *</label>
+                    <input id="res-name" name="name" placeholder="Your Name" value={form.name} onChange={handleChange} className={errors.name ? 'error' : ''} />
                   </div>
                   <div className="form-group">
-                    <label htmlFor="res-email">Email *</label>
-                    <input id="res-email" name="email" type="email" placeholder="you@example.com" value={form.email} onChange={handleChange} className={errors.email ? 'error' : ''} />
-                    {errors.email && <span className="form-error">{errors.email}</span>}
+                    <label htmlFor="res-email"><Mail size={14} /> Email *</label>
+                    <input id="res-email" name="email" type="email" placeholder="you@email.com" value={form.email} onChange={handleChange} className={errors.email ? 'error' : ''} />
                   </div>
                 </div>
 
@@ -168,7 +196,6 @@ export default function Reservation() {
                   <div className="form-group">
                     <label htmlFor="res-date"><Calendar size={14} /> Date *</label>
                     <input id="res-date" name="date" type="date" min={today} value={form.date} onChange={handleChange} className={errors.date ? 'error' : ''} />
-                    {errors.date && <span className="form-error">{errors.date}</span>}
                   </div>
                   <div className="form-group">
                     <label htmlFor="res-time"><Clock size={14} /> Time *</label>
@@ -176,7 +203,6 @@ export default function Reservation() {
                       <option value="">Select time</option>
                       {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
-                    {errors.time && <span className="form-error">{errors.time}</span>}
                   </div>
                 </div>
 
@@ -187,16 +213,15 @@ export default function Reservation() {
                       <option value="">How many?</option>
                       {GUESTS.map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
-                    {errors.guests && <span className="form-error">{errors.guests}</span>}
                   </div>
                   <div className="form-group">
-                    <label htmlFor="res-phone">Phone</label>
+                    <label htmlFor="res-phone"><Phone size={14} /> Phone</label>
                     <input id="res-phone" name="phone" placeholder="+977 98XXXXXXXX" value={form.phone} onChange={handleChange} />
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="res-message">Special Requests</label>
+                  <label htmlFor="res-message"><MessageSquare size={14} /> Special Requests</label>
                   <textarea id="res-message" name="message" rows={3} placeholder="Dietary needs, occasion, seating preference..." value={form.message} onChange={handleChange} />
                 </div>
 
@@ -208,16 +233,25 @@ export default function Reservation() {
                   whileTap={{ scale: loading ? 1 : 0.98 }}
                 >
                   {loading ? (
-                    <span className="reservation__loading"><span className="spinner" /> Confirming…</span>
+                    <span className="reservation__loading"><span className="spinner" /> Processing…</span>
                   ) : (
                     <><Send size={17} /> Confirm Reservation</>
                   )}
                 </motion.button>
+
+                {user && (
+                  <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                    <a href="/my-account" style={{ color: 'var(--color-gold)', fontSize: '0.85rem', textDecoration: 'none', fontWeight: '500' }}>
+                      📋 View your existing reservations →
+                    </a>
+                  </div>
+                )}
               </motion.form>
             )}
           </AnimatePresence>
         </motion.div>
       </div>
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
     </section>
   );
 }
