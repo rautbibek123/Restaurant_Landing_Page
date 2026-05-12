@@ -13,19 +13,19 @@ export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
-  // If already logged in, redirect to portal
+  // If already logged in, redirect based on role
   if (user) {
-    navigate('/portal');
+    navigate(user.role === 'customer' ? '/my-account' : '/portal', { replace: true });
     return null;
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const success = await login(email, password);
+    const loggedInUser = await login(email, password);
     setIsSubmitting(false);
-    if (success) {
-      navigate('/portal');
+    if (loggedInUser) {
+      navigate(loggedInUser.role === 'customer' ? '/my-account' : '/portal', { replace: true });
     }
   };
 

@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShoppingBag, Users, Settings, LogOut, Home } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Users, Settings, LogOut, Home, CalendarCheck, ClipboardList, Activity, DollarSign, Utensils } from 'lucide-react';
 import './portal.css';
 
 export default function PortalLayout() {
@@ -34,12 +34,32 @@ export default function PortalLayout() {
           </NavLink>
           
           <NavLink to="/portal/orders" className={({ isActive }) => `portal-link ${isActive ? 'active' : ''}`}>
-            <ShoppingBag size={18} /> Orders
+            <ClipboardList size={18} /> Orders
+          </NavLink>
+
+          <NavLink to="/portal/reservations" className={({ isActive }) => `portal-link ${isActive ? 'active' : ''}`}>
+            <CalendarCheck size={18} /> Reservations
+          </NavLink>
+
+          <NavLink to="/portal/menu" className={({ isActive }) => `portal-link ${isActive ? 'active' : ''}`}>
+            <Utensils size={18} /> Menu Management
           </NavLink>
 
           {(user.role === 'admin' || user.role === 'manager') && (
             <NavLink to="/portal/staff" className={({ isActive }) => `portal-link ${isActive ? 'active' : ''}`}>
               <Users size={18} /> Staff Management
+            </NavLink>
+          )}
+
+          {user.role === 'admin' && (
+            <NavLink to="/portal/payments" className={({ isActive }) => `portal-link ${isActive ? 'active' : ''}`}>
+              <DollarSign size={18} /> Payments
+            </NavLink>
+          )}
+
+          {(user.role === 'admin' || user.role === 'manager') && (
+            <NavLink to="/portal/activity" className={({ isActive }) => `portal-link ${isActive ? 'active' : ''}`}>
+              <Activity size={18} /> Activity Log
             </NavLink>
           )}
 

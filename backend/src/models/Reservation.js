@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const reservationSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+    default: null
+  },
   name: {
     type: String,
     required: [true, 'Please provide a name'],
@@ -37,6 +42,12 @@ const reservationSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'confirmed', 'cancelled'],
     default: 'pending',
+  },
+  tableNumber: {
+    type: Number,
+    min: 1,
+    max: 12,
+    default: null
   },
 }, {
   timestamps: true,
