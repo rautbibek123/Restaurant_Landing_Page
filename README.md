@@ -1,149 +1,161 @@
-# 🏔️ Annapurna Kitchen Management System
+# 🏔️ Annapurna Kitchen | Enterprise POS & Management Suite
 
-A comprehensive, full-stack web application designed for a modern Nepali restaurant. It features a beautiful, public-facing landing page for customers and a secure, role-based Point of Sale (POS) and Management Portal for restaurant staff.
+[![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-blue)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-green)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/Database-MongoDB-brightgreen)](https://www.mongodb.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+Annapurna Kitchen is a state-of-the-art, full-stack restaurant management platform. It transforms a simple landing page into a robust operational hub, featuring a high-performance POS terminal, real-time financial tracking, and comprehensive staff oversight.
 
 ---
 
-## ✨ System Features
+## 🚀 Key Modules & Features
 
-### 🌍 Public Landing Page
-*   **Immersive UI/UX:** Parallax hero section, floating particles, and a dark/moody aesthetic with deep crimsons and saffron gold accents.
-*   **Dynamic Menu:** Categorized, tab-filtered menu that fetches live data from the MongoDB backend.
-*   **Customer Interactions:** Functional reservation forms and newsletter signups that post directly to the backend API and send automated confirmation emails via Nodemailer.
-*   **Responsive:** Fully mobile-responsive utilizing Vite and React 18.
+### 🏢 Admin & Management Portal
+*   **Operational Dashboard:** Real-time KPI tracking (Revenue, Order volume, Table occupancy) with live activity feeds.
+*   **Menu Engineering:** Full CRUD interface for menu items with bilingual support, stock management, and instant availability toggling.
+*   **Cashier Terminal:** Professional settlement hub with dynamic QR code generation, manual payment processing (Cash/Card), and tax-compliant receipt printing.
+*   **Staff Activity Audit:** A comprehensive, non-repudiable log of every staff action, ensuring full operational accountability.
+*   **Table & Reservation Management:** Dynamic floorplan control and real-time reservation tracking.
 
-### 🛡️ Secure Staff Portal (POS)
-*   **Role-Based Access Control (RBAC):** Strict JWT-based authentication separating `admin`, `manager`, and `staff` permissions.
-*   **Graphical POS Terminal:** A tablet-optimized Point of Sale interface where staff can tap menu items to add them to a dynamic ticket/cart.
-*   **Order Management Board:** A Kanban-style view for kitchen staff and managers to track orders from *Pending* → *Preparing* → *Completed*, and process payments.
-*   **Staff Management:** Dedicated admin area for creating and deactivating employee accounts.
+### 📱 Graphical POS Terminal
+*   **Tablet-Optimized Interface:** High-velocity ordering system with category filtering and smart search.
+*   **Order Customization:** Add specific notes and modifiers to individual items.
+*   **Customer Loyalty:** Integrated customer lookup with automatic discount application based on visit history.
+
+### 🏠 Public Landing Page
+*   **Dynamic Menu:** Automatically syncs with the Management Portal to show real-time availability and pricing.
+*   **Live Reservations:** Seamless booking system with automated confirmation.
+*   **Responsive Design:** Premium, "Deep Space" themed UI optimized for all devices.
+
+---
+
+## 📊 System Architecture
+
+```mermaid
+graph TD
+    User((Customer)) -->|Views/Reserves| Web[Public Landing Page]
+    Staff((Staff)) -->|Processes Orders| POS[POS Terminal]
+    Admin((Manager)) -->|Audits/Configures| AdminPortal[Admin Management Suite]
+
+    subgraph "Frontend Services (React)"
+        Web
+        POS
+        AdminPortal
+        AuthContext[Auth & Role Guard]
+    end
+
+    subgraph "Backend API (Express)"
+        API[RESTful API Gateway]
+        OC[Order Controller]
+        MC[Menu Controller]
+        AC[Activity Log Controller]
+        UC[User/Auth Controller]
+    end
+
+    subgraph "Persistence Layer"
+        DB[(MongoDB Atlas)]
+    end
+
+    POS & AdminPortal --> AuthContext
+    AuthContext --> API
+    Web --> API
+    
+    API --> OC & MC & AC & UC
+    OC & MC & AC & UC --> DB
+```
 
 ---
 
 ## 🛠️ Technology Stack
 
-**Frontend Architecture (React + Vite)**
-*   **Routing:** `react-router-dom` (separating `/` public routes and `/portal/*` secure routes)
-*   **State Management:** React Context API (`AuthContext`)
-*   **Styling & Animation:** Vanilla CSS Variables, Framer Motion
-*   **Icons:** Lucide React
-
-**Backend Architecture (Node.js + Express)**
-*   **Database:** MongoDB & Mongoose
-*   **Authentication:** JSON Web Tokens (JWT), `bcryptjs`
-*   **Security:** Helmet, CORS, Express-Rate-Limit, Express-Validator
-*   **Emails:** Nodemailer
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React 18, Vite, Framer Motion (Animations), Lucide (Icons) |
+| **Backend** | Node.js, Express.js |
+| **Database** | MongoDB, Mongoose (ODM) |
+| **Security** | JWT, BcryptJS, Helmet, CORS, Rate-Limiting |
+| **Utilities** | Nodemailer, Express-Validator |
 
 ---
 
-## 📊 Architecture & Workflow
-
-The following diagram illustrates the high-level architecture and Role-Based Access Control (RBAC) workflow of the system:
-
-```mermaid
-flowchart TD
-    Customer([Customer]) -->|Visits| LandingPage[Public Landing Page]
-    LandingPage -->|Views Menu| BackendAPI
-    LandingPage -->|Submits Reservation| BackendAPI
-    
-    Staff([Restaurant Staff]) -->|Logs In| Auth[Auth Service / JWT]
-    Manager([Manager]) -->|Logs In| Auth
-    Admin([Admin]) -->|Logs In| Auth
-    
-    Auth -->|Token Granted| PortalLayout[Secure Portal / Dashboard]
-    
-    PortalLayout -->|Staff Role| POS[POS Terminal]
-    PortalLayout -->|Staff/Manager Role| Orders[Order Management]
-    PortalLayout -->|Manager/Admin Role| StaffMgmt[Staff Management]
-    
-    POS -->|Creates Order| BackendAPI
-    Orders -->|Updates Status| BackendAPI
-    StaffMgmt -->|CRUD Users| BackendAPI
-    
-    BackendAPI[(Node.js / Express API)] <--> MongoDB[(MongoDB Database)]
-```
-
----
-
-## 🔄 Order Lifecycle (Sequence Diagram)
-
-The following sequence diagram details the flow of data when a staff member takes an order and processes it through the POS portal:
+## 🏗️ Data Flow (Order-to-Settle)
 
 ```mermaid
 sequenceDiagram
-    participant S as Staff (Frontend POS)
-    participant A as AuthContext (React)
-    participant API as Backend API
-    participant DB as MongoDB
+    participant S as Staff (POS)
+    participant B as Backend API
+    participant D as Database
+    participant C as Cashier (Terminal)
 
-    S->>A: Checks LocalStorage for JWT
-    A-->>S: Returns Token (Valid)
+    S->>B: Create Order (Dine-in/Takeaway)
+    B->>D: Save Order & Log Activity
+    B-->>S: Confirm & Print KOT
     
-    S->>API: GET /api/menu
-    API->>DB: Fetch available MenuItems
-    DB-->>API: Array of MenuItems
-    API-->>S: Renders Menu Grid
-    
-    Note over S: Staff taps items &<br/>clicks "Send to Kitchen"
-    
-    S->>API: POST /api/orders (with JWT)
-    API->>API: Verify Token & Staff Role
-    API->>DB: Save new Order (Status: Pending)
-    DB-->>API: Returns Order ID
-    API-->>S: Success Toast!
-    
-    Note over S: Later, Kitchen checks Order Board
-    
-    S->>API: PUT /api/orders/:id/status
-    API->>DB: Update Status -> 'Preparing'
-    
-    Note over S: Customer pays bill
-    
-    S->>API: PUT /api/orders/:id/pay
-    API->>DB: Update PaymentStatus -> 'Paid'
-    DB-->>API: Success
-    API-->>S: Order Completed!
+    C->>B: Fetch Pending Settlements
+    B-->>C: Order Details
+    C->>B: Process Payment (Cash/QR/Card)
+    B->>D: Update Status & Log Payment
+    B-->>C: Payment Success
+    C->>C: Print Customer Receipt
 ```
 
 ---
 
-## 🚀 Local Development Setup
+## ⚙️ Installation & Setup
 
-### 1. Database & Backend Setup
-1. Open a terminal and navigate to the `backend` folder:
-   ```bash
-   cd backend
-   npm install
-   ```
-2. Configure Environment Variables:
-   Create a `.env` file in the `backend` folder and add:
-   ```env
-   NODE_ENV=development
-   PORT=5000
-   MONGODB_URI=mongodb://localhost:27017/annapurna_kitchen
-   JWT_SECRET=your_super_secret_key_123
-   ```
-3. **Seed the Database:** Run this command to generate your first Admin user and populate the Menu items from the static frontend file:
-   ```bash
-   npm run seed
-   npm run seed:menu
-   ```
-4. Start the backend server:
-   ```bash
-   npm run dev
-   ```
+### Prerequisites
+*   Node.js (v16+)
+*   MongoDB Atlas account or local MongoDB instance
 
-### 2. Frontend Setup
-1. Open a *new* terminal and navigate to the `frontend` folder:
-   ```bash
-   cd frontend
-   npm install
-   ```
-2. Start the Vite development server:
-   ```bash
-   npm run dev
-   ```
-3. The public site is now running at `http://localhost:5173`.
-4. Access the POS Portal at `http://localhost:5173/portal` and log in with the seeded credentials:
-   * **Email:** `admin@annapurnakitchen.com`
-   * **Password:** `password123`
+### 1. Clone & Install
+```bash
+git clone https://github.com/rautbibek123/Annapurna-Kitchen_Restaurant.git
+cd Annapurna-Kitchen_Restaurant
+```
+
+### 2. Environment Configuration
+Create a `.env` file in the `backend/` directory:
+```env
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_super_secret_key
+JWT_EXPIRE=30d
+NODE_ENV=development
+```
+
+### 3. Run Development Servers
+**Backend:**
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+## 🔐 Security & Access Control
+The system implements strict **Role-Based Access Control (RBAC)**:
+*   **Admin:** Full system access, including financial settings and staff management.
+*   **Manager:** Menu management, activity logs, and order oversight.
+*   **Staff/Cashier:** POS operations, basic order processing, and payment settlement.
+
+---
+
+## 📜 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 👨‍💻 Author
+**Bibek Raut** - [GitHub Profile](https://github.com/rautbibek123)
+
+---
+*Created with ❤️ for Annapurna Kitchen Restaurant.*
